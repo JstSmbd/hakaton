@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import json
+from random import choice
 from flask_ngrok import run_with_ngrok
 from functions import add_help_btn, check_tokens, get_location, get_coords, get_restaurants, \
     rest_ask_btns, get_recipe, reset_smt, get_dates, get_facts, get_holidays
@@ -10,6 +11,11 @@ sessionStorage = {}
 
 # TODO: сделать разные варианты ответов на одни и те же вопросы
 # TODO: разобраться с интентами, я так понимаю это что-то нужно, хотя толком и не знаю, что это
+
+
+texts = {"help": ["Я могу помочь тебе приготовить завтрак, решить куда сходить поесть или сказать какой сегодня праздник.", "Я могу сказать какой сегодня праздник, помочь тебе приготовить завтрак или решить куда сходить поесть"],
+         "can": ["Я умею определять, какой будет праздник в названную вами дату, подсказывать что и как вам приготовить или помогать с выбором ресторана."],
+         "bad request": ["Не поняла вас.", "Что?", "Еще раз.", "Не очень понятно..."]}
 
 
 actions_buttons = [
@@ -85,15 +91,12 @@ def handle_dialog(res, req, user_id):
     session = sessionStorage[user_id]
     state = session["state"]
     if check_tokens(["помощь", "помоги"], req):
-        res["response"]["text"] = "Я могу помочь тебе приготовить завтрак, " \
-                                  "решить куда сходить поесть или сказать какой сегодня праздник."
+        res["response"]["text"] = choice(texts["help"])
         btns = actions_buttons.copy()
         btns.extend(session["last_buttons"].copy())
         res["response"]["buttons"] = btns
     elif check_tokens(["что"], req) and check_tokens(["умеешь"], req):
-        res["response"]["text"] = "Я могу сказать какой будет праздник, " \
-                                  "в названную вами дату, сказать что и как вам приготовить или " \
-                                  "сказать в какой ресторан вам сходить."
+        res["response"]["text"] = choice(texts["can"])
         btns = actions_buttons.copy()
         btns.extend(session["last_buttons"].copy())
         res["response"]["buttons"] = btns
@@ -122,7 +125,7 @@ def handle_dialog(res, req, user_id):
         res["response"]["text"] = "До встречи!"
         res["response"]["end_session"] = True
     else:
-        res["response"]["text"] = "Что, не поняла вас?"
+        res["response"]["text"] = choice(texts["bad request"])
         res["response"]["buttons"] = session["last_buttons"]
 
 
@@ -133,12 +136,6 @@ def holiday(res, req, ses):
         facts = get_facts(get_dates(req)[0])
         if facts:
             res["response"]["text"] = f"{facts}, вам еще что-нибудь рассказать про этот праздник?"
-            res["response"]["buttons"] = [
-                {
-                    "title": "Расскажи еще",
-                    "hide": True
-                }
-            ]
         else:
             res["response"]["text"] = "Я не знаю ничего про этот праздник"
     elif check_tokens(["хватит", "достаточно", "нет", "не надо"], req):
@@ -175,7 +172,7 @@ def recipe(res, req, ses):
             rec["ask_recipe"] = False
             recipe(res, req, ses)
         else:
-            res["response"]["text"] = "Не поняла вас..."
+            res["response"]["text"] = choice(texts["bad request"])
             res["response"]["buttons"] = ses["last_buttons"].copy()
     elif rec["say_recipe"] and not rec["ask_right_recipe"]:
         res["response"]["text"] = f"Ну что ж: {rec['recipe']}, будете готовить?"
@@ -193,7 +190,7 @@ def recipe(res, req, ses):
             rec["say_recipe"] = False
             recipe(res, req, ses)
         else:
-            res["response"]["text"] = "Не поняла вас..."
+            res["response"]["text"] = choice(texts["bad request"])
             res["response"]["buttons"] = ses["last_buttons"].copy()
     else:
         res["repsonse"]["text"] = "Что-то пошло не так..."
@@ -210,7 +207,7 @@ def restaurant(res, req, ses, first=False):
             # пусть координаты пользователя не будут меняться во время взаимодействия
             restaurant(res, req, ses)
         elif not rest["orgs"]:
-            res["response"]["text"] = ("" if first else "Я вас не поняла. ") + "Где вы находитесь?"
+            res["response"]["text"] = ("" if first else choice(texts["bad request"]) + " ") + "Где вы находитесь?"
         elif rest["orgs"] and not rest["ask_info"] and not rest["change_rest"]:
             res["response"]["text"] = f"Вы можете пойти в ресторан " \
                                       f"\"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['name']}\", находящийся по адресу " \
@@ -230,7 +227,7 @@ def restaurant(res, req, ses, first=False):
                 rest["i"] += 1
                 restaurant(res, req, ses)
             else:
-                res["response"]["text"] = "Не поняла вас..."
+                res["response"]["text"] = choice(texts["bad request"])
                 res["response"]["buttons"] = ses["last_buttons"].copy()
         elif rest["change_rest"]:
             if check_tokens(["меняй", "другой"], req):
@@ -246,7 +243,7 @@ def restaurant(res, req, ses, first=False):
                 ses["state"] = None
                 reset_smt("restaurant", ses)
             else:
-                res["response"]["text"] = "Не поняла вас..."
+                res["response"]["text"] = choice(texts["bad request"])
                 res["response"]["buttons"] = ses["last_buttons"].copy()
         else:
             res["response"]["text"] = "Что-то пошло не так..."

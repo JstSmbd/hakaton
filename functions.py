@@ -93,7 +93,7 @@ def reset_smt(what, session):
 
 def get_recipe():
     # TODO: написать функцию
-    return "котлеты", "рецепт котлет"
+    return "что угодно (пока не сделано)", "сам разбирайся (пока не сделано)"
 
 
 def get_holidays(dates):  # dates - список дат по типу: ["08.03", "09.03", "10.03"]
@@ -116,7 +116,7 @@ def get_holidays(dates):  # dates - список дат по типу: ["08.03",
 
 def get_facts(date):  # date - дата, например, "08.03"
     # TODO: написать функцию
-    return "8 марта - женский день"
+    return "пока не сделано"
 
 
 def get_dates(req):
