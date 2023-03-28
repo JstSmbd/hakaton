@@ -151,8 +151,13 @@ def get_dates(req):
         try:
             ans.append(int(srez[i - 1]))
         except ValueError:
-            ans.append(int(srez[i + 1]))
-        
+            if len(srez) > i + 1:
+                ans.append(int(srez[i + 1]))
+            else:
+                return []
+        except UnboundLocalError:
+            return []
+
         if ans[0] < 10:
             ans[0] = '0' + str(ans[0])
         else:

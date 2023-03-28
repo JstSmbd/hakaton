@@ -57,7 +57,6 @@ def main():
 def handle_dialog(res, req, user_id):
     if req['session']['new']:
         sessionStorage[user_id] = {
-            # "name": None,
             "state": None,
             "restaurant": {
                 "i": 0,
@@ -76,13 +75,14 @@ def handle_dialog(res, req, user_id):
 
             }
         }
-        # TODO: делать ли обращение к пользователь по имени?
-        res["response"]["text"] = "С добрым утром! Вы хотите узнать какой сегодня праздник, " \
-                                  "что приготовить на завтрак или, может, куда сходить поесть?"
+        res["response"]["text"] = "Здесь должна была быть картинка, но ее нет"
+        res["response"]["card"] = {"type": "BigImage",
+                                   "image_id": "1540737/2ed60101ba34854fddbb",
+                                   "title": "С добрым утром! Вы хотите узнать какой сегодня праздник, "
+                                            "что приготовить на завтрак или, может, куда сходить поесть?"}
         res["response"]["buttons"] = actions_buttons.copy()
         return
     session = sessionStorage[user_id]
-    # name = session["name"]
     state = session["state"]
     if check_tokens(["помощь", "помоги"], req):
         res["response"]["text"] = "Я могу помочь тебе приготовить завтрак, " \
@@ -150,10 +150,12 @@ def holiday(res, req, ses):
         holidays = get_holidays(get_dates(req))
         if holidays:
             holidays = '\n'.join(holidays)
-            res["response"]["text"] = f"{holidays}!\nВам рассказать что-то про какой-нибудь праздник или может сказать какой праздник в другую дату?"
+            res["response"][
+                "text"] = f"{holidays}!\nВам рассказать что-то про какой-нибудь праздник или может сказать какой праздник в другую дату?"
         else:
-            res["response"]["text"] = "К сожалению либо в это время нет праздников, либо я таких не знаю, " \
-                                      "может вы хотите узнать что-нибудь про другую дату?"
+            res["response"][
+                "text"] = "К сожалению либо в это время нет праздников, либо я таких не знаю, " \
+                          "может вы хотите узнать что-нибудь про другую дату?"
 
 
 def recipe(res, req, ses):
@@ -217,8 +219,9 @@ def restaurant(res, req, ses, first=False):
             rest["ask_info"] = True
         elif rest["ask_info"]:
             if check_tokens(["этот", "расскажи", "него", "пойдет"], req):
-                res["response"]["text"] = f"Более подробно об этом ресторане вы можете узнать здесь: " \
-                                          f"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url']}, желаете сменить ресторан или этот вам нравится?"
+                res["response"][
+                    "text"] = f"Более подробно об этом ресторане вы можете узнать здесь: " \
+                              f"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url']}, желаете сменить ресторан или этот вам нравится?"
                 res["response"]["buttons"] = rest_ask_btns()
                 rest["change_rest"] = True
                 rest["ask_info"] = False
