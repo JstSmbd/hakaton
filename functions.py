@@ -1,6 +1,7 @@
 import requests
 import datetime
-from random import choice
+from bs4 import BeautifulSoup as bs
+from random import randint, choice
 
 
 def add_help_btn(res):
@@ -93,7 +94,21 @@ def reset_smt(what, session):
 
 def get_recipe():
     # TODO: написать функцию
-    return "что угодно (пока не сделано)", "сам разбирайся (пока не сделано)"
+    url = 'https://www.russianfood.com/recipes/bytype/?fid=926&page='
+    req = requests.get(url + str(randint(1, 44)))
+    result = bs(req.content, 'lxml')
+    title = result.select(".title_o > .title > a")
+    variant = choice(title)
+    return variant.text, 'https://www.russianfood.com' + variant.get('href')
+
+def get_ingredients(url_recepie):
+    req = requests.get(url_recepie)
+    result = bs(req.content, 'lxml')
+    ingredients = result.select('.ingr > tr > td > span')
+    col_portions = ingredients[1].text.replace('(', '').replace(')', '')
+    for x in range(2, len(ingredients)):
+        ingredients[x] = ingredients[x].text
+    return col_portions, ingredients[2::]
 
 
 def get_holidays(dates):  # dates - список дат по типу: ["08.03", "09.03", "10.03"]

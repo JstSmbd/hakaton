@@ -3,7 +3,7 @@ import json
 from random import choice
 from flask_ngrok import run_with_ngrok
 from functions import add_help_btn, check_tokens, get_location, get_coords, get_restaurants, \
-    rest_ask_btns, get_recipe, reset_smt, get_dates, get_facts, get_holidays
+    rest_ask_btns, get_recipe, reset_smt, get_dates, get_facts, get_holidays, get_ingredients
 
 app = Flask(__name__)
 run_with_ngrok(app)
@@ -42,6 +42,8 @@ recipe_btns = [
         "hide": True
     }
 ]
+
+
 
 
 @app.route('/post', methods=['POST'])
@@ -175,12 +177,25 @@ def recipe(res, req, ses):
             res["response"]["text"] = choice(texts["bad request"])
             res["response"]["buttons"] = ses["last_buttons"].copy()
     elif rec["say_recipe"] and not rec["ask_right_recipe"]:
-        res["response"]["text"] = f"Ну что ж: {rec['recipe']}, будете готовить?"
+        ingr = get_ingredients(rec['recipe'])
+        ingredients = '\n'.join(ingr[1])
+
+        res["response"]["text"] = f"Ингредиенты {ingr[0]}:\n{ingredients}\nНу что, будете готовить?"
         rec["ask_right_recipe"] = True
-        res["response"]["buttons"] = recipe_btns.copy()
+        res["response"]["buttons"] = [
+    {
+        "title": "Открыть рецепт",
+        "url": rec['recipe'],
+        "hide": True
+    },
+    {
+        "title": "Не, другое",
+        "hide": True
+    }
+]
     elif rec["ask_right_recipe"]:
-        if check_tokens(["да", "пойдет", "давай", "подходит"], req):
-            res["response"]["text"] = "Удачи! А не хотите узнать есть ли сегодня праздник, " \
+        if check_tokens(["да", "пойдет", "давай", "подходит", "открыть", "рецепт"], req):
+            res["response"]["text"] = f"Удачи! А не хотите узнать есть ли сегодня праздник, " \
                                       "приготовить что-нибудь другое или пойти ресторан?"
             reset_smt("recipe", ses)
             ses["state"] = None
@@ -188,6 +203,7 @@ def recipe(res, req, ses):
         elif check_tokens(["нет", "другое", "меняй"], req):
             rec["ask_recipe"] = False
             rec["say_recipe"] = False
+            rec["ask_right_recipe"] = False
             recipe(res, req, ses)
         else:
             res["response"]["text"] = choice(texts["bad request"])
