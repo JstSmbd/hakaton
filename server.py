@@ -133,28 +133,15 @@ def handle_dialog(res, req, user_id):
 
 def holiday(res, req, ses):
     # TODO: проверить функцию
-    if (check_tokens(["расскажи", "скажи"], req) and check_tokens(["про", "о"], req)) or \
-            check_tokens(["еще"], req):
-        facts = get_facts(get_dates(req)[0])
-        if facts:
-            res["response"]["text"] = f"{facts}, вам еще что-нибудь рассказать про этот праздник?"
-        else:
-            res["response"]["text"] = "Я не знаю ничего про этот праздник"
-    elif check_tokens(["хватит", "достаточно", "нет", "не надо"], req):
-        ses["state"] = None
-        res["response"]["text"] = "Хорошо. Так что вы хотите: узнать еще что-нибудь про " \
-                                  "праздники, сходить куда-нибудь или приготовить еду?"
-        res["response"]["buttons"] = actions_buttons.copy()
+    holidays = get_holidays(get_dates(req))
+    if holidays:
+        holidays = '\n'.join(holidays)
+        res["response"][
+            "text"] = f"{holidays}!\nВам сказать какой праздник в другую дату?"
     else:
-        holidays = get_holidays(get_dates(req))
-        if holidays:
-            holidays = '\n'.join(holidays)
-            res["response"][
-                "text"] = f"{holidays}!\nВам рассказать что-то про какой-нибудь праздник или может сказать какой праздник в другую дату?"
-        else:
-            res["response"][
-                "text"] = "К сожалению либо в это время нет праздников, либо я таких не знаю, " \
-                          "может вы хотите узнать что-нибудь про другую дату?"
+        res["response"][
+            "text"] = "К сожалению либо в это время нет праздников, либо я таких не знаю, " \
+                        "может вы хотите узнать что-нибудь про другую дату?"
 
 
 def recipe(res, req, ses):
