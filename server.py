@@ -133,15 +133,25 @@ def handle_dialog(res, req, user_id):
 
 def holiday(res, req, ses):
     # TODO: проверить функцию
-    holidays = get_holidays(get_dates(req))
-    if holidays:
-        holidays = '\n'.join(holidays)
-        res["response"][
-            "text"] = f"{holidays}!\nВам сказать какой праздник в другую дату?"
+    if check_tokens(["хватит", "достаточно", "нет", "не", "надо"], req):
+        ses["state"] = None
+        res["response"]["text"] = "Хорошо. Так что вы хотите: узнать еще что-нибудь про " \
+                                  "праздники, сходить куда-нибудь или приготовить еду?"
+        res["response"]["buttons"] = actions_buttons.copy()
     else:
-        res["response"][
-            "text"] = "К сожалению либо в это время нет праздников, либо я таких не знаю, " \
-                        "может вы хотите узнать что-нибудь про другую дату?"
+        holidays = get_holidays(get_dates(req))
+        if holidays:
+            holidays = '\n'.join(holidays)
+            res["response"]["text"] = f"{holidays}!\nВам сказать какой праздник в другую дату?"
+            res['response']['buttons'] = [
+                {
+                    "title": "Нет",
+                    "hide": True
+                }
+            ]
+        else:
+            res["response"]["text"] = "К сожалению либо в это время нет праздников, либо я таких не знаю, " \
+                            "может вы хотите узнать что-нибудь про другую дату?"
 
 
 def recipe(res, req, ses):
@@ -149,7 +159,7 @@ def recipe(res, req, ses):
     rec = ses["recipe"]
     if not rec["ask_recipe"] and not rec["say_recipe"]:
         rec["key"], rec["recipe"] = get_recipe()
-        res["response"]["text"] = f"Как вам {rec['key']}, рассказать рецепт или что-нибудь другое?"
+        res["response"]["text"] = f"Как вам {rec['key']}?\nРассказать рецепт или подобрать что-нибудь другое?"
         rec["ask_recipe"] = True
         res["response"]["buttons"] = recipe_btns.copy()
     elif rec["ask_recipe"]:
@@ -170,16 +180,16 @@ def recipe(res, req, ses):
         res["response"]["text"] = f"Ингредиенты {ingr[0]}:\n{ingredients}\nНу что, будете готовить?"
         rec["ask_right_recipe"] = True
         res["response"]["buttons"] = [
-    {
-        "title": "Открыть рецепт",
-        "url": rec['recipe'],
-        "hide": True
-    },
-    {
-        "title": "Не, другое",
-        "hide": True
-    }
-]
+        {
+            "title": "Открыть рецепт",
+            "url": rec['recipe'],
+            "hide": True
+        },
+        {
+            "title": "Не, другое",
+            "hide": True
+        }
+    ]
     elif rec["ask_right_recipe"]:
         if check_tokens(["да", "пойдет", "давай", "подходит", "открыть", "рецепт"], req):
             res["response"]["text"] = f"Удачи! А не хотите узнать есть ли сегодня праздник, " \
