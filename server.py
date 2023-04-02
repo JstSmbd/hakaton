@@ -142,10 +142,10 @@ def holiday(res, req, ses):
         holidays = get_holidays(get_dates(req))
         if holidays:
             holidays = '\n'.join(holidays)
-            res["response"]["text"] = f"{holidays}!\nВам сказать какой праздник в другую дату?"
+            res["response"]["text"] = f"{holidays}!\nЕсли вы хотите узнать про другую дату, введите её."
             res['response']['buttons'] = [
                 {
-                    "title": "Нет",
+                    "title": "Хватит",
                     "hide": True
                 }
             ]
@@ -230,8 +230,8 @@ def restaurant(res, req, ses, first=False):
         elif rest["ask_info"]:
             if check_tokens(["этот", "расскажи", "него", "пойдет"], req):
                 res["response"][
-                    "text"] = f"Более подробно об этом ресторане вы можете узнать здесь: " \
-                              f"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url']}, желаете сменить ресторан или этот вам нравится?"
+                    "text"] = f"Более подробно об этом ресторане вы можете узнать здесь:\n" \
+                              f"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url']}\nЖелаете сменить ресторан или этот вам нравится?"
                 res["response"]["buttons"] = rest_ask_btns()
                 rest["change_rest"] = True
                 rest["ask_info"] = False
@@ -248,7 +248,7 @@ def restaurant(res, req, ses, first=False):
                 rest["change_rest"] = False
                 rest["ask_info"] = False
                 restaurant(res, req, ses)
-            elif check_tokens(["подходит", "пойдет", "ладно"], req):
+            elif check_tokens(["подходит", "пойдет", "ладно"], req) or req['request']['command'] == "давай этот":
                 res["response"]["text"] = "Приятного аппетита! А не хотите узнать есть ли сегодня " \
                                           "праздник, приготовить что-нибудь сами или пойти все-таки " \
                                           "в другой ресторан?"
