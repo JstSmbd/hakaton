@@ -1,12 +1,10 @@
 from flask import Flask, request, jsonify
 import json
 from random import choice
-from flask_ngrok import run_with_ngrok
 from functions import add_help_btn, check_tokens, get_location, get_coords, get_restaurants, \
     rest_ask_btns, get_recipe, reset_smt, get_dates, get_facts, get_holidays, get_ingredients
 
 app = Flask(__name__)
-run_with_ngrok(app)
 sessionStorage = {}
 
 # TODO: сделать разные варианты ответов на одни и те же вопросы
@@ -42,8 +40,6 @@ recipe_btns = [
         "hide": True
     }
 ]
-
-
 
 
 @app.route('/post', methods=['POST'])
@@ -215,23 +211,25 @@ def restaurant(res, req, ses, first=False):
     # TODO: сделать возможность узнать геолокацию пользователя, не спрашивая напрямую
     rest = ses["restaurant"]
     try:
-        if not rest["orgs"] and (location := get_location(req)) and (coords := get_coords(location)):
-            rest["orgs"] = get_restaurants(coords)
-            # пусть координаты пользователя не будут меняться во время взаимодействия
-            restaurant(res, req, ses)
+        location = get_location(req)
+        if not rest["orgs"] and location:
+            coords = get_coords(location)
+            if coords:
+                rest["orgs"] = get_restaurants(coords)
+                # пусть координаты пользователя не будут меняться во время взаимодействия
+                restaurant(res, req, ses)
         elif not rest["orgs"]:
             res["response"]["text"] = ("" if first else choice(texts["bad request"]) + " ") + "Где вы находитесь?"
         elif rest["orgs"] and not rest["ask_info"] and not rest["change_rest"]:
             res["response"]["text"] = f"Вы можете пойти в ресторан " \
                                       f"\"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['name']}\", находящийся по адресу " \
                                       f"\"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['address']}\", хотите узнать про него побольше или может хотите пойти в другой ресторан?"
-            res["response"]["buttons"] = rest_ask_btns()
+            res["response"]["buttons"] = rest_ask_btns(rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url'])
             rest["ask_info"] = True
         elif rest["ask_info"]:
             if check_tokens(["этот", "расскажи", "него", "пойдет"], req):
                 res["response"][
-                    "text"] = f"Более подробно об этом ресторане вы можете узнать здесь: " \
-                              f"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url']}, желаете сменить ресторан или этот вам нравится?"
+                    "text"] = f"Желаете сменить ресторан или этот вам нравится?"
                 res["response"]["buttons"] = rest_ask_btns()
                 rest["change_rest"] = True
                 rest["ask_info"] = False
@@ -248,7 +246,7 @@ def restaurant(res, req, ses, first=False):
                 rest["change_rest"] = False
                 rest["ask_info"] = False
                 restaurant(res, req, ses)
-            elif check_tokens(["подходит", "пойдет", "ладно"], req):
+            elif check_tokens(["подходит", "пойдет", "ладно", "этот"], req):
                 res["response"]["text"] = "Приятного аппетита! А не хотите узнать есть ли сегодня " \
                                           "праздник, приготовить что-нибудь сами или пойти все-таки " \
                                           "в другой ресторан?"
