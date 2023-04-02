@@ -175,7 +175,7 @@ def recipe(res, req, ses):
             res["response"]["buttons"] = ses["last_buttons"].copy()
     elif rec["say_recipe"] and not rec["ask_right_recipe"]:
         ingr = get_ingredients(rec['recipe'])
-        ingredients = '\n'.join(ingr[1])
+        ingredients = "• " + '\n• '.join(ingr[1]) 
 
         res["response"]["text"] = f"Ингредиенты {ingr[0]}:\n{ingredients}\nНу что, будете готовить?"
         rec["ask_right_recipe"] = True

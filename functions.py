@@ -106,7 +106,12 @@ def get_ingredients(url_recepie):
     result = bs(req.content, 'lxml')
     ingredients = result.select('.ingr > tr > td > span')
     col_portions = ingredients[1].text.replace('(', '').replace(')', '')
-    for x in range(2, len(ingredients)):
+    if 'на' in col_portions and 'порции' in col_portions:
+        start = 2
+    else:
+        col_portions = ''
+        start = 1
+    for x in range(start, len(ingredients)):
         ingredients[x] = ingredients[x].text
     return col_portions, ingredients[2::]
 
