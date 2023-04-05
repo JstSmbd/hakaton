@@ -3,12 +3,11 @@ import json
 from random import choice
 from functions import add_help_btn, check_tokens, get_location, get_coords, get_restaurants, \
     rest_ask_btns, get_recipe, reset_smt, get_dates, get_facts, get_holidays, get_ingredients
-from flask_ngrok import run_with_ngrok
 
 
 app = Flask(__name__)
 sessionStorage = {}
-run_with_ngrok(app)
+
 # TODO: сделать разные варианты ответов на одни и те же вопросы
 # TODO: разобраться с интентами, я так понимаю это что-то нужно, хотя толком и не знаю, что это
 
@@ -98,8 +97,9 @@ def handle_dialog(res, req, user_id):
         res["response"]["buttons"] = btns
     elif check_tokens(["что"], req) and check_tokens(["умеешь"], req):
         res["response"]["text"] = choice(texts["can"])
-        btns = actions_buttons.copy()
-        btns.extend(session["last_buttons"].copy())
+        btns = session["last_buttons"].copy()
+        if actions_buttons[0] not in btns:
+            btns.extend(actions_buttons.copy())
         res["response"]["buttons"] = btns
     elif check_tokens(["какой", "какие", "что", "расскажи", "скажи"], req) and \
             check_tokens(["праздник", "праздники"], req):
