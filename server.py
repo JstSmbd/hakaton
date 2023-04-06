@@ -4,7 +4,6 @@ from random import choice
 from functions import add_help_btn, check_tokens, get_location, get_coords, get_restaurants, \
     rest_ask_btns, get_recipe, reset_smt, get_dates, get_facts, get_holidays, get_ingredients
 
-
 app = Flask(__name__)
 sessionStorage = {}
 
@@ -12,10 +11,17 @@ sessionStorage = {}
 # TODO: разобраться с интентами, я так понимаю это что-то нужно, хотя толком и не знаю, что это
 
 
-texts = {"help": ["Я могу помочь тебе приготовить завтрак, решить куда сходить поесть или сказать какой сегодня праздник.", "Я могу сказать какой сегодня праздник, помочь тебе приготовить завтрак или решить куда сходить поесть"],
-         "can": ["Я умею определять, какой будет праздник в названную вами дату, подсказывать что и как вам приготовить или помогать с выбором ресторана."],
+texts = {"help": ["Задайте мне вопрос \"Где поесть?\", на что я вам скажу где можно перекусить или "
+                  "задайте вопрос \"Что мне приготовить\", и я помогу вам подобрать рецепт, "
+                  "а можете задать вопрос \"Какой сегодня праздник?\" и я вам расскажу о сегдняшних праздниках, "
+                  "хотя вы можете спросить и про то, какие праздники будут в следующие, например, 4 дня.",
+                  "Вы можете спросить у меня \"Где мне поесть?\", и я вам отвечу куда вы можете сходить,\n"
+                  "Задайте вопрос \"Что приготовить\", на что я расскажу вам какой-нибудь рецепт,\n"
+                  "Спросите \"Какой сегодня праздник?\" и я вам скажу о празднике, хотя можете "
+                  "спросить и про то, какие праздники будут в следующие, например, 23 дня."],
+         "can": [
+             "Я умею определять, какой будет праздник в названную вами дату, подсказывать что и как вам приготовить или помогать с выбором ресторана."],
          "bad request": ["Не поняла вас.", "Что?", "Еще раз.", "Не очень понятно..."]}
-
 
 actions_buttons = [
     {
@@ -80,7 +86,8 @@ def handle_dialog(res, req, user_id):
 
             }
         }
-        res["response"]["text"] = "Здесь должна была быть картинка, но ее нет"
+        res["response"]["text"] = "С добрым утром! Вы хотите узнать какой сегодня праздник, " \
+                                  "что приготовить на завтрак или, может, куда сходить поесть?"
         res["response"]["card"] = {"type": "BigImage",
                                    "image_id": "1540737/2ed60101ba34854fddbb",
                                    "title": "С добрым утром! Вы хотите узнать какой сегодня праздник, "
@@ -111,7 +118,7 @@ def handle_dialog(res, req, user_id):
         reset_smt("recipe", session)
         recipe(res, req, session)
     elif check_tokens(["позавтракать", "поесть", "пообедать", "поужинать"], req) and \
-            check_tokens(["где"], req):
+            check_tokens(["где", "куда"], req):
         session["state"] = "restaurant"
         reset_smt("restaurant", session)
         restaurant(res, req, session, True)
@@ -141,7 +148,7 @@ def holiday(res, req, ses):
         holidays = get_holidays(get_dates(req))
         if holidays:
             holidays = '\n'.join(holidays)
-            res["response"]["text"] = f"{holidays}!\nВам сказать какой праздник в другую дату?"
+            res["response"]["text"] = f"{holidays}!\nПро какую дату вы еще хотите узнать?"
             res['response']['buttons'] = [
                 {
                     "title": "Нет",
@@ -149,8 +156,9 @@ def holiday(res, req, ses):
                 }
             ]
         else:
-            res["response"]["text"] = "К сожалению либо в это время нет праздников, либо я таких не знаю, " \
-                            "может вы хотите узнать что-нибудь про другую дату?"
+            res["response"][
+                "text"] = "К сожалению либо в это время нет праздников, либо я таких не знаю, " \
+                          "про какую дату вы еще хотите узнать?"
 
 
 def recipe(res, req, ses):
@@ -158,11 +166,13 @@ def recipe(res, req, ses):
     rec = ses["recipe"]
     if not rec["ask_recipe"] and not rec["say_recipe"]:
         rec["key"], rec["recipe"] = get_recipe()
-        res["response"]["text"] = f"Как вам {rec['key']}?\nРассказать рецепт или подобрать что-нибудь другое?"
+        res["response"][
+            "text"] = f"Как вам {rec['key']}?\nРассказать рецепт или подобрать что-нибудь другое?"
         rec["ask_recipe"] = True
         res["response"]["buttons"] = recipe_btns.copy()
     elif rec["ask_recipe"]:
-        if check_tokens(["расскажи", "рассказывай", "давай", "этот"], req):
+        if check_tokens(["расскажи", "рассказывай", "давай", "этот", "скажи", "сказать"], req) and \
+                not check_tokens(["другой", "другое"], req):
             rec["say_recipe"] = True
             rec["ask_recipe"] = False
             recipe(res, req, ses)
@@ -174,25 +184,27 @@ def recipe(res, req, ses):
             res["response"]["buttons"] = ses["last_buttons"].copy()
     elif rec["say_recipe"] and not rec["ask_right_recipe"]:
         ingr = get_ingredients(rec['recipe'])
-        ingredients = "• " + '\n• '.join(ingr[1]) 
+        ingredients = "• " + '\n• '.join(ingr[1])
 
         res["response"]["text"] = f"Ингредиенты {ingr[0]}:\n{ingredients}\nНу что, будете готовить?"
         rec["ask_right_recipe"] = True
         res["response"]["buttons"] = [
-        {
-            "title": "Открыть рецепт",
-            "url": rec['recipe'],
-            "hide": True
-        },
-        {
-            "title": "Не, другое",
-            "hide": True
-        }
-    ]
+            {
+                "title": "Открыть рецепт",
+                "url": rec['recipe'],
+                "hide": True
+            },
+            {
+                "title": "Не, другое",
+                "hide": True
+            }
+        ]
     elif rec["ask_right_recipe"]:
         if check_tokens(["да", "пойдет", "давай", "подходит", "открыть", "рецепт"], req):
             res["response"]["text"] = f"Удачи! А не хотите узнать есть ли сегодня праздник, " \
-                                      "приготовить что-нибудь другое или пойти ресторан?"
+                                      f"приготовить что-нибудь другое или пойти ресторан? ({rec['recipe']})"
+            res["response"]["tts"] = f"Удачи! А не хотите узнать есть ли сегодня праздник, " \
+                                     f"приготовить что-нибудь другое или пойти ресторан?"
             reset_smt("recipe", ses)
             ses["state"] = None
             res["response"]["buttons"] = actions_buttons.copy()
@@ -222,17 +234,21 @@ def restaurant(res, req, ses, first=False):
                 # пусть координаты пользователя не будут меняться во время взаимодействия
                 restaurant(res, req, ses)
         elif not rest["orgs"]:
-            res["response"]["text"] = ("" if first else choice(texts["bad request"]) + " ") + "Где вы находитесь?"
+            res["response"]["text"] = ("" if first else choice(
+                texts["bad request"]) + " ") + "А по какому адресу вы сейчас находитесь?"
         elif rest["orgs"] and not rest["ask_info"] and not rest["change_rest"]:
             res["response"]["text"] = f"Вы можете пойти в ресторан " \
                                       f"\"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['name']}\", находящийся по адресу " \
                                       f"\"{rest['orgs'][rest['i']]['properties']['CompanyMetaData']['address']}\", хотите узнать про него побольше или может хотите пойти в другой ресторан?"
-            res["response"]["buttons"] = rest_ask_btns(rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url'])
+            res["response"]["buttons"] = rest_ask_btns(
+                rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url'])
             rest["ask_info"] = True
         elif rest["ask_info"]:
-            if check_tokens(["этот", "расскажи", "него", "пойдет"], req):
+            if check_tokens(["этот", "расскажи", "него", "пойдет", "побольше", "узнать", "давай"],
+                            req):
                 res["response"][
-                    "text"] = f"Желаете сменить ресторан или этот вам нравится?"
+                    "text"] = f"Желаете сменить ресторан или этот вам нравится? ({rest['orgs'][rest['i']]['properties']['CompanyMetaData']['url']})"
+                res["response"]["tts"] = "Желаете сменить ресторан или этот вам нравится?"
                 res["response"]["buttons"] = rest_ask_btns()
                 rest["change_rest"] = True
                 rest["ask_info"] = False
@@ -244,7 +260,7 @@ def restaurant(res, req, ses, first=False):
                 res["response"]["text"] = choice(texts["bad request"])
                 res["response"]["buttons"] = ses["last_buttons"].copy()
         elif rest["change_rest"]:
-            if check_tokens(["меняй", "другой"], req):
+            if check_tokens(["меняй", "другой", "желаю", "хочу"], req):
                 rest["i"] += 1
                 rest["change_rest"] = False
                 rest["ask_info"] = False
